@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conditional Form</title>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body class="h-full">
+  <div class="min-h-full flex items-center justify-center p-6">
+   <div class="w-full max-w-2xl">
+    <div id="formContainer" class="rounded-lg shadow-lg p-8">
+     <h1 id="formTitle" class="text-3xl font-bold mb-2">Event Registration Form</h1>
+     <p class="mb-6 opacity-75">Search and select a member to auto-fill their details</p>
+     <form id="mainForm" class="space-y-6">
+      <div><label for="eventNameInput" class="block text-sm font-medium mb-2">Event Name</label> <input type="text" id="eventNameInput" readonly class="w-full px-4 py-3 rounded-lg border-2 bg-gray-100 cursor-not-allowed" placeholder="Event name will be set automatically">
+      </div>
+      <div class="relative"><label for="memberNameInput" class="block text-sm font-medium mb-2">Member Name</label> <input type="text" id="memberNameInput" required class="w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:ring-2 transition-all" placeholder="Start typing member name..." autocomplete="off">
+       <div id="searchResults" class="absolute z-10 w-full bg-white border-2 rounded-lg mt-1 max-h-48 overflow-y-auto hidden shadow-lg"></div>
+      </div>
+      <div><label for="memberIdInput" class="block text-sm font-medium mb-2">Member ID</label> <input type="text" id="memberIdInput" required class="w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:ring-2 transition-all" placeholder="Member ID">
+      </div>
+      <div><label for="clubNameInput" class="block text-sm font-medium mb-2">Club Name</label> <input type="text" id="clubNameInput" required class="w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:ring-2 transition-all" placeholder="Club name">
+      </div>
+      <div><label for="contactNumberInput" class="block text-sm font-medium mb-2">Contact Number</label> <input type="tel" id="contactNumberInput" required class="w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:ring-2 transition-all" placeholder="Contact number">
+      </div>
+      <div><label for="emailIdInput" class="block text-sm font-medium mb-2">Email ID</label> <input type="email" id="emailIdInput" required class="w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:ring-2 transition-all" placeholder="Email address">
+      </div>
+      <div><label for="positionInput" class="block text-sm font-medium mb-2">Position/Registered as</label> <input type="text" id="positionInput" required class="w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:ring-2 transition-all" placeholder="Position or registration type">
+      </div>
+      <div><label for="foodPreferenceSelect" class="block text-sm font-medium mb-2">Food Preference</label> <select id="foodPreferenceSelect" required class="w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:ring-2 transition-all"> <option value="">-- Select food preference --</option> <option value="Veg">Veg</option> <option value="Non Veg">Non Veg</option> <option value="Jain">Jain</option> <option value="Vegan">Vegan</option> </select>
+      </div><button type="submit" id="submitBtn" class="w-full py-3 px-6 rounded-lg font-semibold transition-all transform hover:scale-105 focus:outline-none focus:ring-4"> Submit Information </button>
+     </form>
+     <div id="successMessage" class="mt-6 p-4 rounded-lg hidden">
+      <p class="font-semibold">✓ Form submitted successfully!</p>
+     </div>
+    </div>
+    <div class="mt-8">
+     <h2 class="text-2xl font-bold mb-4">Submitted Records</h2>
+     <div id="recordsList" class="space-y-3"></div>
+    </div>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      background_color: "#f0f4f8",
+      surface_color: "#ffffff",
+      text_color: "#1e293b",
+      primary_action_color: "#3b82f6",
+      secondary_action_color: "#64748b",
+      font_family: "system-ui",
+      font_size: 16,
+      event_name: "Annual College Fest 2024",
+      form_title: "Event Registration Form",
+      submit_button_text: "Register for Event"
+    };
+
+    // Reference member data (CMS data)
+    const memberDatabase = [
+      { member_id: "MEM001", member_name: "Rahul Sharma", club_name: "Tech Club", contact_number: "+91 98765 43210", email_id: "rahul.sharma@college.edu", position: "President" },
+      { member_id: "MEM002", member_name: "Priya Patel", club_name: "Drama Society", contact_number: "+91 87654 32109", email_id: "priya.patel@college.edu", position: "Vice President" },
+      { member_id: "MEM003", member_name: "Arjun Singh", club_name: "Sports Club", contact_number: "+91 76543 21098", email_id: "arjun.singh@college.edu", position: "Secretary" },
+      { member_id: "MEM004", member_name: "Sneha Gupta", club_name: "Music Club", contact_number: "+91 65432 10987", email_id: "sneha.gupta@college.edu", position: "Treasurer" },
+      { member_id: "MEM005", member_name: "Vikram Joshi", club_name: "Photography Club", contact_number: "+91 54321 09876", email_id: "vikram.joshi@college.edu", position: "Member" },
+      { member_id: "MEM006", member_name: "Ananya Reddy", club_name: "Dance Club", contact_number: "", email_id: "ananya.reddy@college.edu", position: "Coordinator" },
+      { member_id: "MEM007", member_name: "Karan Mehta", club_name: "Debate Society", contact_number: "+91 43210 98765", email_id: "", position: "Member" },
+      { member_id: "MEM008", member_name: "Ishita Agarwal", club_name: "Art Club", contact_number: "+91 32109 87654", email_id: "ishita.agarwal@college.edu", position: "" }
+    ];
+
+    let submittedRecords = [];
+
+    function setupMemberSearch() {
+      const memberNameInput = document.getElementById('memberNameInput');
+      const searchResults = document.getElementById('searchResults');
+      
+      memberNameInput.addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase().trim();
+        
+        // Check for exact match first and auto-fill immediately
+        const exactMatch = memberDatabase.find(member => 
+          member.member_name.toLowerCase() === query
+        );
+        
+        if (exactMatch) {
+          selectMember(exactMatch.member_id);
+          searchResults.classList.add('hidden');
+          return;
+        }
+        
+        // Check for partial matches starting from first character
+        const partialMatch = memberDatabase.find(member => 
+          member.member_name.toLowerCase().startsWith(query) && query.length >= 3
+        );
+        
+        if (partialMatch && query.length >= 3) {
+          selectMember(partialMatch.member_id);
+        }
+        
+        if (query.length < 2) {
+          searchResults.classList.add('hidden');
+          return;
+        }
+        
+        const filteredMembers = memberDatabase.filter(member => 
+          member.member_name.toLowerCase().includes(query)
+        );
+        
+        if (filteredMembers.length === 0) {
+          searchResults.classList.add('hidden');
+          return;
+        }
+        
+        searchResults.innerHTML = filteredMembers.map(member => `
+          <div class="p-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0" onclick="selectMember('${member.member_id}')">
+            <div class="font-semibold">${member.member_name}</div>
+            <div class="text-sm text-gray-600">${member.member_id} • ${member.club_name}</div>
+          </div>
+        `).join('');
+        
+        searchResults.classList.remove('hidden');
+      });
+      
+      // Hide search results when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!memberNameInput.contains(e.target) && !searchResults.contains(e.target)) {
+          searchResults.classList.add('hidden');
+        }
+      });
+    }
+
+    function selectMember(memberId) {
+      const member = memberDatabase.find(m => m.member_id === memberId);
+      
+      if (member) {
+        document.getElementById('memberNameInput').value = member.member_name;
+        document.getElementById('memberIdInput').value = member.member_id;
+        document.getElementById('clubNameInput').value = member.club_name;
+        document.getElementById('contactNumberInput').value = member.contact_number || '';
+        document.getElementById('emailIdInput').value = member.email_id || '';
+        document.getElementById('positionInput').value = member.position || '';
+        
+        document.getElementById('searchResults').classList.add('hidden');
+      }
+    }
+
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      
+      const submitBtn = document.getElementById('submitBtn');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      const formData = {
+        id: 'reg_' + Date.now(),
+        event_name: document.getElementById('eventNameInput').value,
+        member_name: document.getElementById('memberNameInput').value,
+        member_id: document.getElementById('memberIdInput').value,
+        club_name: document.getElementById('clubNameInput').value,
+        contact_number: document.getElementById('contactNumberInput').value,
+        email_id: document.getElementById('emailIdInput').value,
+        position: document.getElementById('positionInput').value,
+        food_preference: document.getElementById('foodPreferenceSelect').value,
+        registered_at: new Date().toISOString()
+      };
+
+      if (submittedRecords.length >= 999) {
+        showMessage('Maximum limit of 999 records reached. Please delete some records first.', true);
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+        return;
+      }
+
+      const result = await window.dataSdk.create(formData);
+
+      if (result.isOk) {
+        showMessage('Form submitted successfully!', false);
+        document.getElementById('mainForm').reset();
+      } else {
+        showMessage('Failed to submit form. Please try again.', true);
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    }
+
+    function showMessage(text, isError) {
+      const messageDiv = document.getElementById('successMessage');
+      messageDiv.querySelector('p').textContent = isError ? '✗ ' + text : '✓ ' + text;
+      messageDiv.classList.remove('hidden');
+      
+      setTimeout(() => {
+        messageDiv.classList.add('hidden');
+      }, 3000);
+    }
+
+    function renderRecords() {
+      const container = document.getElementById('recordsList');
+      
+      if (submittedRecords.length === 0) {
+        container.innerHTML = '<p class="opacity-50">No records submitted yet</p>';
+        return;
+      }
+
+      container.innerHTML = submittedRecords.map(record => `
+        <div class="p-4 rounded-lg border-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-semibold text-lg">${record.member_name}</p>
+              <p class="text-sm opacity-75">${record.member_id} • ${record.club_name}</p>
+              <p class="text-sm opacity-75">${record.email_id || 'No email'} • ${record.contact_number || 'No contact'}</p>
+              <p class="text-sm opacity-75">Position: ${record.position || 'Not specified'} • Food: ${record.food_preference}</p>
+              <p class="text-xs opacity-50 mt-1">Event: ${record.event_name} • ${new Date(record.registered_at).toLocaleString()}</p>
+            </div>
+            <button onclick="deleteRecord('${record.__backendId}')" class="px-3 py-1 rounded text-sm font-medium transition-all hover:opacity-80">
+              Delete
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function deleteRecord(backendId) {
+      const record = submittedRecords.find(r => r.__backendId === backendId);
+      if (!record) return;
+
+      const result = await window.dataSdk.delete(record);
+      
+      if (!result.isOk) {
+        showMessage('Failed to delete record. Please try again.', true);
+      }
+    }
+
+    async function onConfigChange(config) {
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      const baseSize = config.font_size || defaultConfig.font_size;
+      
+      const bgColor = config.background_color || defaultConfig.background_color;
+      const surfaceColor = config.surface_color || defaultConfig.surface_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      const primaryColor = config.primary_action_color || defaultConfig.primary_action_color;
+      const secondaryColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+
+      document.body.style.background = bgColor;
+      document.body.style.color = textColor;
+      document.body.style.fontFamily = `${customFont}, ${baseFontStack}`;
+
+      const formContainer = document.getElementById('formContainer');
+      formContainer.style.background = surfaceColor;
+      formContainer.style.color = textColor;
+
+      const formTitle = document.getElementById('formTitle');
+      formTitle.textContent = config.form_title || defaultConfig.form_title;
+      formTitle.style.fontSize = `${baseSize * 2}px`;
+      formTitle.style.color = textColor;
+
+      const eventNameInput = document.getElementById('eventNameInput');
+      eventNameInput.value = config.event_name || defaultConfig.event_name;
+
+      document.querySelector('#formContainer p').style.fontSize = `${baseSize}px`;
+      document.querySelector('#formContainer p').style.color = textColor;
+
+      const labels = document.querySelectorAll('label');
+      labels.forEach(label => {
+        label.style.fontSize = `${baseSize * 0.875}px`;
+        label.style.color = textColor;
+      });
+
+      const inputs = document.querySelectorAll('input, select');
+      inputs.forEach(input => {
+        input.style.fontSize = `${baseSize}px`;
+        input.style.color = textColor;
+        input.style.background = surfaceColor;
+        input.style.borderColor = secondaryColor;
+      });
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.textContent = config.submit_button_text || defaultConfig.submit_button_text;
+      submitBtn.style.fontSize = `${baseSize}px`;
+      submitBtn.style.background = primaryColor;
+      submitBtn.style.color = '#ffffff';
+
+      const successMessage = document.getElementById('successMessage');
+      successMessage.style.background = primaryColor + '20';
+      successMessage.style.color = textColor;
+      successMessage.style.fontSize = `${baseSize}px`;
+
+      document.querySelector('#recordsList').previousElementSibling.style.fontSize = `${baseSize * 1.5}px`;
+      document.querySelector('#recordsList').previousElementSibling.style.color = textColor;
+
+      const recordCards = document.querySelectorAll('#recordsList > div');
+      recordCards.forEach(card => {
+        card.style.background = surfaceColor;
+        card.style.borderColor = secondaryColor;
+        card.style.color = textColor;
+      });
+
+      const deleteButtons = document.querySelectorAll('#recordsList button');
+      deleteButtons.forEach(btn => {
+        btn.style.background = secondaryColor;
+        btn.style.color = '#ffffff';
+      });
+    }
+
+    const dataHandler = {
+      onDataChanged(data) {
+        submittedRecords = data;
+        renderRecords();
+      }
+    };
+
+    async function init() {
+      setupMemberSearch();
+      
+      document.getElementById('mainForm').addEventListener('submit', handleFormSubmit);
+
+      if (window.dataSdk) {
+        const initResult = await window.dataSdk.init(dataHandler);
+        if (!initResult.isOk) {
+          console.error('Failed to initialize data SDK');
+        }
+      }
+
+      if (window.elementSdk) {
+        window.elementSdk.init({
+          defaultConfig,
+          onConfigChange,
+          mapToCapabilities: (config) => ({
+            recolorables: [
+              {
+                get: () => config.background_color || defaultConfig.background_color,
+                set: (value) => {
+                  config.background_color = value;
+                  window.elementSdk.setConfig({ background_color: value });
+                }
+              },
+              {
+                get: () => config.surface_color || defaultConfig.surface_color,
+                set: (value) => {
+                  config.surface_color = value;
+                  window.elementSdk.setConfig({ surface_color: value });
+                }
+              },
+              {
+                get: () => config.text_color || defaultConfig.text_color,
+                set: (value) => {
+                  config.text_color = value;
+                  window.elementSdk.setConfig({ text_color: value });
+                }
+              },
+              {
+                get: () => config.primary_action_color || defaultConfig.primary_action_color,
+                set: (value) => {
+                  config.primary_action_color = value;
+                  window.elementSdk.setConfig({ primary_action_color: value });
+                }
+              },
+              {
+                get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+                set: (value) => {
+                  config.secondary_action_color = value;
+                  window.elementSdk.setConfig({ secondary_action_color: value });
+                }
+              }
+            ],
+            borderables: [],
+            fontEditable: {
+              get: () => config.font_family || defaultConfig.font_family,
+              set: (value) => {
+                config.font_family = value;
+                window.elementSdk.setConfig({ font_family: value });
+              }
+            },
+            fontSizeable: {
+              get: () => config.font_size || defaultConfig.font_size,
+              set: (value) => {
+                config.font_size = value;
+                window.elementSdk.setConfig({ font_size: value });
+              }
+            }
+          }),
+          mapToEditPanelValues: (config) => new Map([
+            ["event_name", config.event_name || defaultConfig.event_name],
+            ["form_title", config.form_title || defaultConfig.form_title],
+            ["submit_button_text", config.submit_button_text || defaultConfig.submit_button_text]
+          ])
+        });
+
+        await onConfigChange(window.elementSdk.config);
+      }
+    }
+
+    init();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99962801d59b4013',t:'MTc2MjI4MDc1MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
